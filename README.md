@@ -1,211 +1,115 @@
-# Agent-TravelForge
+🌍 TravelForge: 智能出行决策与自动化执行工作流 (Workflow)
 
-Agent-TravelForge 是一个基于 LangChain、RAG、本地 BGE 向量模型和 MCP 工具的智能出行策划与执行 Agent。
+TravelForge 是一个面向复杂出行场景的智能 Agent 工作流系统。系统基于 LangChain 架构，整合了 RAG（检索增强生成）与多智能体（Multi-Agent）协同处理能力，旨在解决传统出行规划中“信息碎片化、预算不可控、执行难落地”的核心痛点。
 
-项目目标是跑通一个可解释的出行规划闭环：
+本项目在底层架构上参考了优秀的开源 Agent 框架，并在此基础上进行了深度的全局状态流转重构与多智能体容错优化，具备极高的商业落地参考价值。
 
-```text
-用户自然语言需求
--> 参数抽取
--> RAG 检索城市旅行知识
--> MCP 查询天气、POI、酒店价格
--> 预算估算
--> 行程生成
--> Reflection 质检
--> 可选 Seedream 封面图
--> Markdown 导出
-```
+🚀 核心架构优化与个人贡献 (✨ Highlight)
 
-## 当前能力
+相比于基础的演示级开源框架，本项目在工程化落地上进行了以下深度优化：
 
-已完成：
+1.重构全局状态管理 (Two-way Data Binding)
 
-- 本地 RAG：杭州、长沙旅行知识种子文档
-- 本地向量模型：默认使用 `BAAI/bge-small-zh-v1.5`，路径通过 `.env` 配置
-- Chroma 向量库：持久化到 `data/chroma_db`
-- 参数抽取：自然语言转 `TripRequest`
-- 多轮记忆：保存对话历史，并维护结构化出行需求状态
-- 参数确认：正式生成前确认日期、人数、天数、交通方式、预算范围等必要信息
-- 高德 MCP：天气、POI 工具接入
-- 酒店 MCP：酒店搜索和价格查询接入，支持 ModelScope 代理或 RollingGo 官方接口
-- 预算估算：城市消费系数 + 酒店 MCP 中位参考价
-- 运行时上下文：注入当前时间，支持相对日期理解
-- 计算工具：支持安全基础数学计算
-- Plan-and-Solve：Planner 输出工具计划，Executor 按计划选择工具
-- Planner 输出容错：字符串步骤会自动规范化，避免模型格式波动导致崩溃
-- ReAct 调试轨迹：显示 Thought、Action、Observation
-- Reflection 迭代：最多 2 轮质检和自动优化
-- 草案/正式分层：粗略规划跳过 Reflection，正式报告进入完整质检
-- 生成后追问：酒店、住宿、预算、路线等补充问题默认走 follow-up，不重新生成完整行程
-- 模型分工：DeepSeek 负责主规划和反思；豆包 mini 负责轻量理解、抽取和后续多模态；Seedream 负责可选封面图
-- 导出可选：只有用户明确要求“导出/保存”才写入 `outputs/trip_plan.md`
-- Streamlit UI：聊天、参数表单、调试轨迹、Markdown 下载和封面图生成
-- 本轮评分：UI 展示需求理解、约束满足、工具使用、输出质量等 8 维评分
-- 产品化交互：左侧参数表单和快捷调整，中间对话，右侧 tabs 展示结果、状态、过程、评分和封面
+  痛点：传统 Streamlit AI 项目中，前端静态表单与后端 Agent 对话历史存在严重的“状态割裂”。
 
-## 快速开始
+  重构方案：利用 st.session_state 引入双向数据绑定机制，打通了用户自然语言输入与结构化表单之间的壁垒，实现复杂交互场景下的状态实时同步。
 
-激活环境：
+2.多 Agent 协同与 Plan-and-Solve 容错调度
 
-```text
+  采用 Planner（规划器）与 Executor（执行器）分离的架构。
+
+  针对长文本字符串骤发导致的模型格式波动问题进行自动规范化，大幅提升系统对模糊约束（如交通方式、预算未指定）的边界处理能力和防崩溃能力。
+
+3.基于 RAG 的防幻觉机制
+
+  挂载本地 BAAI/bge-small-zh-v1.5 向量模型与 Chroma 持久化知识库。
+
+  确保景点开放时间、酒店历史报价等信息的客观真实性，通过底层 Prompt 强约束大语言模型的发散性幻觉。
+
+🛠️ 当前核心能力矩阵 (Features)
+
+ 🧠 自然语言参数抽取：多轮对话记忆，自动维护和更新结构化出行需求状态（目的地、天数、人数、预算等）。
+
+ 🔗 外部工具调用 (MCP 集成)：
+
+  高德地图 MCP：实时查询天气、POI（兴趣点）精准位置。
+
+  酒店 MCP：接入酒店搜索与价格查询 API，支持 ModelScope 代理机制。
+
+ 💰 动态预算估算：结合城市消费系数与酒店 MCP 中位参考价，进行安全基础数学计算。
+
+ 🔄 Reflection (反思迭代)：内置最多 2 轮结果质检与自动优化，确保最终输出的路线合理性与预算可行性。
+
+ 📝 分层产出：支持“草案/正式”分层，粗略规划跳过 Reflection 直接输出，正式报告则进入完整质检并支持 Markdown 一键导出。
+
+⚙️ 技术栈 (Tech Stack)
+
+| 模块 | 技术方案 |
+| :--- | :--- |
+| **底层框架** | LangChain / Python 3.10 |
+| **大语言模型 (LLM)** | DeepSeek (主逻辑调度与反思) / 豆包 (轻量级抽取与意图理解) |
+| **RAG 向量检索** | ChromaDB / `BAAI/bge-small-zh-v1.5` |
+| **前端交互** | Streamlit |
+| **工具调用** | 官方 MCP (Model Context Protocol) 标准规范 |
+
+💻 快速开始 (Quick Start)
+
+1. 环境准备
+
+推荐使用 Conda 创建隔离的虚拟环境：
+
+conda create -n agent python=3.10 -y
 conda activate agent
-```
+pip install -r requirements.txt
+pip install langchain-deepseek
 
-构建 RAG 向量库：
 
-```text
-python -m travel_forge.rag.build_index
-```
+2. 环境变量配置
 
-测试 RAG：
+复制项目根目录下的 .env.example 文件并重命名为 .env，填入以下必要参数：
 
-```text
-python -m travel_forge.rag.retriever
-```
-
-测试 MCP：
-
-```text
-python -m travel_forge.app.test_mcp_calls
-```
-
-运行固定 Demo：
-
-```text
-python -m travel_forge.app.demo
-```
-
-运行交互式 CLI：
-
-```text
-python -m travel_forge.app.cli
-```
-
-运行 Streamlit UI：
-
-```text
-python -m travel_forge.app.run_ui
-```
-
-如果一定要直接用 Streamlit，也建议使用下面这种方式，避免 Windows 下 `streamlit.exe` 绑定到旧虚拟环境：
-
-```text
-python -m streamlit run travel_forge/app/streamlit_app.py
-```
-
-UI 不依赖 CLI。两者只是不同入口，都会调用同一个 `TravelForgeConversationAgent`。
-
-如果 UI 内显示“运行失败”，右侧会出现“错误详情”，可展开查看完整 traceback。项目已在 `.streamlit/config.toml` 中关闭 Streamlit 文件监听，避免 Windows + 本地模型环境下出现不稳定的 watcher 错误。
-
-关闭 UI：
-
-- 如果 UI 是在当前终端前台启动的，按 `Ctrl+C`。
-- 如果浏览器关了但服务还在，说明 Streamlit 服务器进程仍在运行。先powershell查看：
-
-```text
-Get-Process python,streamlit -ErrorAction SilentlyContinue
-```
-
-再按具体 PID 关闭：
-
-```text
-Stop-Process -Id 你的PID
-```
-
-CLI 支持普通聊天和多轮补充，例如：
-
-```text
-你好
-我想去杭州玩
-两天，两个人，喜欢文化和美食
-生成行程
-坐普速火车，1500包含往返大交通
-导出 Markdown
-```
-
-## 环境变量
-
-复制 `.env.example` 为 `.env`，并填写本地配置：
-
-```text
 api_key=your_deepseek_api_key
-base_url=https://api.deepseek.com
+base_url=[https://api.deepseek.com](https://api.deepseek.com)
 model_id=deepseek-chat
+# 其他 MCP 与本地向量库路径请参考文档默认配置
 
-api_key_ark=your_volc_ark_api_key
-ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-ARK_MULTIMODAL_MODEL=doubao-seed-2-0-mini-260428
-ARK_IMAGE_MODEL=doubao-seedream-4-5-251128
-ARK_IMAGE_SIZE=1920x1920
 
-GAODE_MCP_URL=your_gaode_mcp_url
-GAODE_MCP_TRANSPORT=sse
+3. 构建本地 RAG 知识库
 
-HOTEL_MCP_URL=your_hotel_mcp_url
-HOTEL_MCP_TRANSPORT=streamable_http
-HOTEL_MCP_BACKEND=auto
-HOTEL_MCP_AUTH_TOKEN=
+首次运行前必须构建本地向量数据库：
 
-BGE_MODEL_PATH=D:\models\bge-small-zh-v1.5
-CHROMA_DIR=./data/chroma_db
-```
+python -m travel_forge.rag.build_index
 
-Seedream 4.5 对图片尺寸有最低像素要求，`1024x1024` 会被拒绝。默认使用 `1920x1920`，刚好满足至少 `3686400` 像素的要求。
 
-## 隐私与安全
+4. 启动 Web 服务
 
-- 不要提交 `.env`、真实 MCP URL、API Key、Bearer Token、生成报告、生成图片或本地向量库。
-- `.gitignore` 已默认忽略 `.env*`、`outputs/`、`data/chroma_db/`、`data/processed/` 和 Streamlit secrets。
-- `.env.example` 只保留占位配置，用于说明变量名。
-- 如果使用 RollingGo 官方酒店 MCP，请把 `HOTEL_MCP_AUTH_TOKEN` 放在 `.env` 中，不要写入代码或文档。
+python -m travel_forge.app.run_ui
 
-## 项目结构
 
-```text
-travel_forge/
-  config.py
-  models.py
-  schemas.py
-  mcp_client.py
-  memory.py
+运行后，浏览器将自动打开 http://localhost:8501。
 
-  rag/
-    embeddings.py
-    loaders.py
-    vector_store.py
-    build_index.py
-    retriever.py
+📂 项目结构概览
 
-  tools/
-    budget_tools.py
-    image_tools.py
-    gaode_mcp_tools.py
-    hotel_mcp_tools.py
-    runtime_tools.py
-    rag_tools.py
-    export_tools.py
+TravelForge/
+├── travel_forge/            # 核心业务代码逻辑
+│   ├── agents/              # 多智能体定义 (Planner, Executor, Reflector)
+│   ├── rag/                 # 检索增强生成模块 (向量化、索引构建)
+│   ├── tools/               # 外部工具封装 (高德 MCP, 酒店搜索, 预算计算)
+│   ├── app/                 # Streamlit UI 与入口端
+│   ├── memory.py            # 上下文多轮对话记忆管理
+│   └── mcp_client.py        # MCP 协议客户端
+├── data/                    # 本地 RAG 种子文档与 Chroma 数据库
+├── docs/                    # 开发与系统架构文档
+├── README.md                
+├── requirements.txt         # 依赖清单
+└── .env                     # (未提交) 环境与密钥配置
 
-  agents/
-    conversation_agent.py
-    constraint_checker.py
-    extractor_agent.py
-    trip_agent.py
-    reflection_agent.py
 
-  evaluation/
-    evaluator.py
+📅 未来规划 (Roadmap)
 
-  app/
-    streamlit_app.py
-    cli.py
-    demo.py
-    list_mcp_tools.py
-    inspect_mcp_tools.py
-    test_mcp_calls.py
-```
+ [ ] 引入 Redis 缓存机制，优化相同目的地的二次检索速度。
 
-## 开发文档
+ [ ] 接入多模态模型，支持根据游记图片反向生成路线规划。
 
-详细开发说明统一维护在：
+ [ ] 开发用户登录模块，实现个人历史行程的云端持久化存储。
 
-- `docs/PROJECT_DEVELOPMENT.md`
