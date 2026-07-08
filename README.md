@@ -1,4 +1,4 @@
-🌍 TravelForge: 多智能体 (Multi-Agent) 协同规划与自动执行引擎
+🌍 TravelForge: 多智能体规划与执行引擎
 
 TravelForge 是一个面向复杂出行场景的智能 Agent 工作流系统。系统基于 LangChain 架构，整合了 RAG（检索增强生成）与多智能体（Multi-Agent）协同处理能力，旨在解决传统出行规划中“信息碎片化、预算不可控、执行难落地”的核心痛点。
 
